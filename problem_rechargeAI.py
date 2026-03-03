@@ -1,11 +1,9 @@
 import numpy as np
 import csdl_alpha as csdl
 import time
-
+import funlib
 from csdl_alpha.experimental import PySimulator
 from modopt import CSDLAlphaProblem, TrustConstr, SLSQP
-
-import funlib
 
 # ---------- smooth helpers ----------
 def smooth_positive(z, eps=1e-3, sqrt_fn=csdl.sqrt):
@@ -14,9 +12,9 @@ def smooth_positive(z, eps=1e-3, sqrt_fn=csdl.sqrt):
 
 # ---------- A) Parameters ----------
 def get_problem_params():
-    h = 12000.0
+    h = 10000.0
     return dict(
-        rho = funlib.isa_density(h), # Density at given altitude (kg/m^3)
+        rho = funlib.isa_density_equations(h), # Density at given altitude (kg/m^3)
         g = 9.80665, # Gravity (m/s^2)
         R_loiter = 5000.0, # Loiter circle radius (m)
         CD0 = 0.03, # Zero-lift drag coefficient
@@ -108,6 +106,47 @@ def add_power_energy_endurance(S, V, m_batt, A_panel, D, params, positive_fn=smo
     T_endurance = E_avail / P_batt_deplete
     return P_req, P_solar, P_batt_avg_cycle, T_endurance
 
+def add_power_discharge(S, V, m_batt, A_panel, D, params, positive_fn=smooth_positive):
+    eta_prop = params["eta_prop"]
+    P_area = params["P_area"]
+    eta_mppt = params["eta_mppt"]
+    f_day = params["f_day"]
+    eta_batt = params["eta_batt"]
+    E_spec = params["E_spec"]
+
+    P_req = (D * V) / eta_prop
+    P_solar = P_area * eta_mppt * A_panel
+
+    E_avail = eta_batt * E_spec * m_batt
+
+    # day/night average battery draw
+    P_def_day = positive_fn(P_req - P_solar, eps=1e-3)
+    # Avoid division by near-zero power draw.
+    P_batt_avg = f_day * P_def_day + (1.0 - f_day) * P_req + 1.0
+
+    T_endurance = E_avail / P_batt_avg
+    return P_req, P_solar, T_endurance
+
+def add_power_recharge_inf(S, V, m_batt, A_panel, D, params):
+    eta_prop = params["eta_prop"]
+    P_area = params["P_area"]
+    eta_mppt = params["eta_mppt"]
+    f_day = params["f_day"]
+    eta_batt = params["eta_batt"]
+    E_spec = params["E_spec"]
+
+    P_req = (D * V) / eta_prop
+    P_solar = P_area * eta_mppt * A_panel
+
+    E_avail = eta_batt * E_spec * m_batt
+
+    # day/night average battery draw (can be negative during day to represent charging)
+    P_day = P_req - P_solar
+    P_batt_avg = f_day * P_day + (1.0 - f_day) * P_req
+
+    T_endurance = E_avail / P_batt_avg
+    return P_req, P_solar, T_endurance
+
 # ---------- F) Constraints + objective ----------
 def add_constraints_objective(S, b, W, CL, P_req, P_batt_avg_cycle, T_endurance, params):
     CL_max = params["CL_max"]
@@ -118,16 +157,16 @@ def add_constraints_objective(S, b, W, CL, P_req, P_batt_avg_cycle, T_endurance,
     P_batt_avg_min = params["P_batt_avg_min"]
 
     # objective
-    (-T_endurance).set_as_objective()
+    (-T_endurance / 3600.0).set_as_objective()
 
-    # constraints (all <= 0 form)
-    (CL - (CL_max / stall_SF)).set_as_constraint(upper=0.0)
-    ((W / S) - WS_max).set_as_constraint(upper=0.0)
-    (b - b_max).set_as_constraint(upper=0.0)
-    (P_req - P_max).set_as_constraint(upper=0.0)
+    # constraints (all <= 0 form), normalized to O(1)
+    (CL/(CL_max/stall_SF) - 1).set_as_constraint(upper=0.0)
+    ((W/S)/WS_max - 1).set_as_constraint(upper=0.0)
+    (b/b_max - 1).set_as_constraint(upper=0.0)
+    (P_req/P_max - 1).set_as_constraint(upper=0.0)
     # Prevent near-infinite endurance / division singularity by requiring positive net battery depletion over the day-night cycle.
     # P_batt_avg_cycle >= P_batt_avg_min
-    (P_batt_avg_min - P_batt_avg_cycle).set_as_constraint(upper=0.0)
+    ((P_batt_avg_min - P_batt_avg_cycle)/P_batt_avg_min).set_as_constraint(upper=0.0)
 
 # ---------- 1) CSDL builder ----------
 def build_recorder(use_solar=True):
@@ -179,8 +218,8 @@ def make_problem(problem_name="solar_uav"):
 
 # ---------- 3) Solving Problem ----------
 def run_opt(problem):
-    # optimizer = TrustConstr(problem, solver_options={"maxiter": 800, "barrier_tol": 1e-8})
-    optimizer = SLSQP(problem, solver_options={"maxiter": 500, "ftol": 1e-8})
+    optimizer = TrustConstr(problem, solver_options={"maxiter": 800, "gtol": 1e-8})
+    #optimizer = SLSQP(problem, solver_options={"maxiter": 500, "ftol": 1e-8})
 
     t0 = time.perf_counter()
     optimizer.solve()
