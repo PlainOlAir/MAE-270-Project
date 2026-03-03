@@ -37,7 +37,7 @@ def isa_density(h_m: float) -> float:
 
     return float(p / (R * T))
 
-    # g0 = 9.80665
+    g0 = 9.80665
     # R = 287.05287
     # T0 = 288.15
     # p0 = 101325.0
