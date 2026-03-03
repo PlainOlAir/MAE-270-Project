@@ -1,0 +1,9 @@
+# Python
+__pycache__/
+*.pyc
+
+# Output files
+*.out
+
+# VS Code
+.vscode/
