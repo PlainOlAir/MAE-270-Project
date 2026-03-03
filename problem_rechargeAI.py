@@ -29,16 +29,16 @@ def get_problem_params():
         eta_batt = 0.95, # Battery efficiency
         # https://www.nasa.gov/smallsat-institute/sst-soa/power-subsystems/#3.4
         E_spec = 250.0 * 3600.0,  # J/kg 
-        m_payload = 30.0,
+        m_payload = 100.0,
         sigma_panel=3,          # https://www.spectrolab.com/DataSheets/Panel/panels.pdf
-        a_struct=1.2,
-        b_struct=0.04,
+        a_struct=2.0,
+        b_struct=0.1,
         WS_max=250.0,
         b_max=40.0,
         P_max=12000.0,  
         # Keep optimization in finite-endurance regime (W). If this is too restrictive,
         # lower it, but keep it > 0 to avoid unbounded endurance.
-        P_batt_avg_min=200.0,
+        P_batt_avg_min=100.0,
     )
 
 # ---------- B) Geometry ----------
@@ -177,9 +177,9 @@ def build_recorder(use_solar=True):
 
     # design variables
     S = csdl.Variable(name="S", value=30.0)
-    AR = csdl.Variable(name="AR", value=22.0)
+    AR = csdl.Variable(name="AR", value=20.0)
     V = csdl.Variable(name="V", value=30.0)
-    m_batt = csdl.Variable(name="m_batt", value=60.0)
+    m_batt = csdl.Variable(name="m_batt", value=100.0)
     f_panel = csdl.Variable(name="f_panel", value=0.6)
 
     S.set_as_design_variable(lower=5.0, upper=50.0)
