@@ -52,3 +52,22 @@ def isa_density(h_m: float) -> float:
         
 
     return float(p / (R * T))
+
+def isa_density_equations(h_m: float) -> float:
+    g0 = 9.80665
+    R = 287.05287
+    T0 = 288.15
+    p0 = 101325.0
+    L = -0.0065
+    h_trop = 11000.0
+    
+    if h_m <= h_trop:
+        T = T0 + L * h_m
+        p = p0 * (T / T0) ** (-g0 / (L * R))
+    else:
+        T_trop = T0 + L * h_trop
+        p_trop = p0 * (T_trop / T0) ** (-g0 / (L * R))
+        T = T_trop
+        p = p_trop * np.exp(-g0 * (h_m - h_trop) / (R * T))
+    
+    return float(p / (R * T))
