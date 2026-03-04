@@ -37,22 +37,30 @@ def get_problem_params():
         R_loiter = 5000.0,              # Loiter circle radius (m)
         CD0 = 0.03,                     # Zero-lift drag coefficient
         e = 0.80,                       # Oswald efficiency factor
-        CL_max = 1.4,                   # Maximum lift coefficient
-        stall_SF = 1.2,                 # Stall safety factor
         eta_prop = 0.80,                # Propeller efficiency
-        f_day = 0.50,                   # Fraction of daylight during the day
+        f_day = 0.40,                   # Fraction of daylight during the day
         eta_mppt = 0.98,                # Transformer efficiency
         eta_batt = 0.95,                # Battery efficiency
         m_payload = 30.0,               # Payload mass (kg)
         a_struct = 1.2,                 # Structural mass for wing area (kg/m^2)
         b_struct = 0.04,                # Structural mass for wingspan (kg/m)
+        
+        # Constraint parameters
+        CL_max = 1.4,                   # Maximum lift coefficient
+        stall_SF = 1.2,                 # Stall safety factor
         WS_max = 250.0,                 # Maximum wing loading (kg/m^2)
         b_max = 40.0,                   # Maximum wingspan (m)
         P_max = 12000.0,                # Maximum power draw (W)
-
+        P_batt_avg_min = 100.0,         # Minimum average battery power (W)
         # Keep optimization in finite-endurance regime (W). If this is too restrictive,
         # lower it, but keep it > 0 to avoid unbounded endurance.
-        P_batt_avg_min = 100.0,           # Minimum average battery power (W)
+        
+        # Initial design variables
+        S_ini = 30.0,
+        AR_ini = 20.0,
+        V_ini = 30.0,
+        m_batt_ini = 100.0,
+        f_panel_ini = 0.6
     )
 
 # ---------- B) Geometry ----------
@@ -262,17 +270,17 @@ def build_recorder(use_solar=True):
     rec.start()
 
     # Design variables
-    S = csdl.Variable(name="S", value=30.0)
-    AR = csdl.Variable(name="AR", value=20.0)
-    V = csdl.Variable(name="V", value=30.0)
-    m_batt = csdl.Variable(name="m_batt", value=100.0)
-    f_panel = csdl.Variable(name="f_panel", value=0.6)
+    S = csdl.Variable(name="S", value = params["S_ini"])
+    AR = csdl.Variable(name="AR", value = params["AR_ini"])
+    V = csdl.Variable(name="V", value = params["V_ini"])
+    m_batt = csdl.Variable(name="m_batt", value = params["m_batt_ini"])
+    f_panel = csdl.Variable(name="f_panel", value = params["f_panel_ini"])
 
     S.set_as_design_variable(lower=5.0, upper=50.0)
     AR.set_as_design_variable(lower=10.0, upper=30.0)
     V.set_as_design_variable(lower=15.0, upper=45.0)
     m_batt.set_as_design_variable(lower=5.0, upper=200.0)
-    f_panel.set_as_design_variable(lower=0.0, upper=1.0)
+    f_panel.set_as_design_variable(lower=0.0, upper=0.9)
 
     # Build model via functions
     b = add_geometry(S, AR)
