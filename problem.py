@@ -52,7 +52,7 @@ def get_problem_params():
 
         # Keep optimization in finite-endurance regime (W). If this is too restrictive,
         # lower it, but keep it > 0 to avoid unbounded endurance.
-        P_batt_avg_min = 200.0,           # Minimum average battery power (W)
+        P_batt_avg_min = 100.0,           # Minimum average battery power (W)
     )
 
 # ---------- B) Geometry ----------
@@ -323,7 +323,7 @@ def derive_outputs_from_design(x, params):
     S, AR, V, m_batt, f_panel = np.asarray(x).astype(float).ravel()
 
     wingspan = add_geometry(S, AR, sqrt_fn=np.sqrt)
-    weight, _, A_panel = add_mass_model(S, AR, m_batt, f_panel, params)
+    weight, _, A_panel = add_mass_model(S, AR, m_batt, f_panel, params, sqrt_fn=np.sqrt)
     CL_loiter, _, D, _ = add_aero_loiter(S, AR, V, weight, params, sqrt_fn=np.sqrt)
     smooth_positive_np = lambda z, eps=1e-3: smooth_positive(z, eps=eps, sqrt_fn=np.sqrt)
     P_req, P_solar, P_batt_avg_cycle, T_endurance_s = add_power_energy_endurance(
