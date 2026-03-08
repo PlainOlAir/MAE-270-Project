@@ -21,7 +21,7 @@ def smooth_positive(z, eps=1e-3, sqrt_fn=csdl.sqrt):
 
 # ---------- A) Parameters ----------
 def get_problem_params():
-    h = 10000.0
+    h = 12000.0
     return dict(
         # https://www.spectrolab.com/DataSheets/Panel/panels.pdf
         sigma_panel = 3,                # Area density of solar panels (kg/m^2)
@@ -37,13 +37,15 @@ def get_problem_params():
         R_loiter = 5000.0,              # Loiter circle radius (m)
         CD0 = 0.03,                     # Zero-lift drag coefficient
         e = 0.80,                       # Oswald efficiency factor
-        eta_prop = 0.80,                # Propeller efficiency
-        f_day = 0.40,                   # Fraction of daylight during the day
+        eta_prop = 0.75,                # Propeller efficiency
+            # https://www.sciencedirect.com/topics/engineering/propeller-efficiency#chapters-articles
+        f_day = 0.25,                   # Fraction of daylight during the day
+            # https://www.solar.com/learn/how-much-energy-does-a-solar-panel-produce/
         eta_mppt = 0.98,                # Transformer efficiency
         eta_batt = 0.95,                # Battery efficiency
         m_payload = 30.0,               # Payload mass (kg)
-        a_struct = 1.2,                 # Structural mass for wing area (kg/m^2)
-        b_struct = 0.04,                # Structural mass for wingspan (kg/m)
+        a_struct = 2,                   # Structural mass for wing area (kg/m^2)
+        b_struct = 0.05,                # Structural mass for wingspan (kg/m)
         
         # Constraint parameters
         CL_max = 1.4,                   # Maximum lift coefficient
@@ -51,7 +53,7 @@ def get_problem_params():
         WS_max = 250.0,                 # Maximum wing loading (kg/m^2)
         b_max = 40.0,                   # Maximum wingspan (m)
         P_max = 12000.0,                # Maximum power draw (W)
-        P_batt_avg_min = 100.0,         # Minimum average battery power (W)
+        P_batt_avg_min = 10.0,          # Minimum average battery draw in a day cycle (W)
         # Keep optimization in finite-endurance regime (W). If this is too restrictive,
         # lower it, but keep it > 0 to avoid unbounded endurance.
         
@@ -286,9 +288,7 @@ def build_recorder(use_solar=True):
     b = add_geometry(S, AR)
     W, m_total, A_panel = add_mass_model(S, AR, m_batt, f_panel, params)
     CL, CD, D, n = add_aero_loiter(S, AR, V, W, params)
-    P_req, P_solar, P_batt_avg_cycle, T_endurance = add_power_energy_endurance(
-        S, V, m_batt, A_panel, D, params
-    )
+    P_req, P_solar, P_batt_avg_cycle, T_endurance = add_power_energy_endurance(S, V, m_batt, A_panel, D, params)
 
     # Name variables
     b.add_name("wingspan")
