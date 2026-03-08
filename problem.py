@@ -2,7 +2,7 @@ import numpy as np
 import csdl_alpha as csdl
 import funlib
 from csdl_alpha.experimental import PySimulator
-from modopt import CSDLAlphaProblem, TrustConstr, PySLSQP
+import modopt
 
 # ---------- smooth helpers ----------
 def smooth_positive(z, eps=1e-3, sqrt_fn=csdl.sqrt):
@@ -20,7 +20,7 @@ def smooth_positive(z, eps=1e-3, sqrt_fn=csdl.sqrt):
 
 # ---------- A) Parameters ----------
 def get_problem_params():
-    h = 12000.0
+    h = 13000.0
     return dict(
         # https://www.spectrolab.com/DataSheets/Panel/panels.pdf
         sigma_panel = 3,                # Area density of solar panels (kg/m^2)
@@ -43,7 +43,7 @@ def get_problem_params():
         eta_mppt = 0.98,                # Transformer efficiency
         eta_batt = 0.95,                # Battery efficiency
         m_payload = 30.0,               # Payload mass (kg)
-        a_struct = 2,                   # Structural mass for wing area (kg/m^2)
+        a_struct = 1.5,                 # Structural mass for wing area (kg/m^2)
         b_struct = 0.05,                # Structural mass for wingspan (kg/m)
         
         # Constraint parameters
@@ -307,12 +307,12 @@ def build_recorder(use_solar=True):
 def make_problem(problem_name="solar_uav"):
     rec = build_recorder(use_solar=True)
     sim = PySimulator(rec)
-    return CSDLAlphaProblem(problem_name=problem_name, simulator=sim), sim
+    return modopt.CSDLAlphaProblem(problem_name=problem_name, simulator=sim), sim
 
 # ---------- 3) Solving Problem ----------
 def run_opt(problem):
-    optimizer = TrustConstr(problem, solver_options={"maxiter": 800, "gtol": 1e-8})
-    #optimizer = PySLSQP(problem)
+    options={"maxiter": 800, "gtol": 1e-8}
+    optimizer = modopt.TrustConstr(problem, solver_options=options)
 
     optimizer.solve()
     optimizer.print_results()
@@ -380,7 +380,7 @@ def print_solution_summary(sim, results):
 
 # ---------- Script ----------
 if __name__ == "__main__":
-    problem, sim = make_problem(problem_name="solar_uav_slsqp")
+    problem, sim = make_problem(problem_name="solar_uav")
     results = run_opt(problem)
     try:
         sim.run()
