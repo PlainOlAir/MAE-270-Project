@@ -1,9 +1,8 @@
 import numpy as np
 import csdl_alpha as csdl
-import time
 import funlib
 from csdl_alpha.experimental import PySimulator
-from modopt import CSDLAlphaProblem, TrustConstr, SLSQP
+from modopt import CSDLAlphaProblem, TrustConstr, PySLSQP
 
 # ---------- smooth helpers ----------
 def smooth_positive(z, eps=1e-3, sqrt_fn=csdl.sqrt):
@@ -313,18 +312,16 @@ def make_problem(problem_name="solar_uav"):
 # ---------- 3) Solving Problem ----------
 def run_opt(problem):
     optimizer = TrustConstr(problem, solver_options={"maxiter": 800, "gtol": 1e-8})
-    #optimizer = SLSQP(problem, solver_options={"maxiter": 500, "ftol": 1e-8})
+    #optimizer = PySLSQP(problem)
 
-    t0 = time.perf_counter()
     optimizer.solve()
-    elapsed = time.perf_counter() - t0
     optimizer.print_results()
 
     results = getattr(optimizer, "results", {})
     if not isinstance(results, dict):
         results = {}
 
-    return results, elapsed
+    return results
 
 # ---------- 4) Deriving optimized values ----------
 def derive_outputs_from_design(x, params):
@@ -384,7 +381,7 @@ def print_solution_summary(sim, results):
 # ---------- Script ----------
 if __name__ == "__main__":
     problem, sim = make_problem(problem_name="solar_uav_slsqp")
-    results, _ = run_opt(problem)
+    results = run_opt(problem)
     try:
         sim.run()
     except Exception:

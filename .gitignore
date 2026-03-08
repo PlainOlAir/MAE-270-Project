@@ -4,6 +4,7 @@ __pycache__/
 
 # Output files
 *.out
+*output.txt
 
 # VS Code
 .vscode/
