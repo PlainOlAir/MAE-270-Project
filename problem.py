@@ -3,6 +3,7 @@ import csdl_alpha as csdl
 import funlib
 from csdl_alpha.experimental import PySimulator
 import modopt
+from modopt.postprocessing import visualize
 
 # ---------- smooth helpers ----------
 def smooth_positive(z, eps=1e-3, sqrt_fn=csdl.sqrt):
@@ -312,10 +313,12 @@ def make_problem(problem_name="solar_uav"):
 # ---------- 3) Solving Problem ----------
 def run_opt(problem):
     options={"maxiter": 800, "gtol": 1e-8}
-    optimizer = modopt.TrustConstr(problem, solver_options=options)
+    optimizer = modopt.TrustConstr(problem, solver_options=options, recording=True)
 
     optimizer.solve()
     optimizer.print_results()
+    # Creating Graphs
+    visualize(optimizer.out_dir+'/record.hdf5', ['obj', 'opt', 'feas'], save_figname='graphs.pdf')
 
     results = getattr(optimizer, "results", {})
     if not isinstance(results, dict):
